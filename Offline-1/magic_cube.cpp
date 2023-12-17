@@ -133,7 +133,9 @@ vector<vector<Point>> generateSpherePartPoints(int s) {
             Point long_normal = Point(-sin(theta), 0, -cos(theta));
 
             // direction vector of intersected line, n1 x n2
-            Point dir = (long_normal*lat_normal).normalize();
+            Point dir = (long_normal*lat_normal);
+
+			dir = dir / dir.absolute_value(); // nomralizing
 
             stack_points.push_back(dir);
 		}

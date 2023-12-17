@@ -53,8 +53,4 @@ public:
     double absolute_value() const {
         return sqrt(x*x + y*y + z*z);
     }
-
-    Point normalize() const {
-        return *this / this->absolute_value();
-    }
 };

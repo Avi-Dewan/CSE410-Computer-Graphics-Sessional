@@ -122,14 +122,14 @@ public:
     }
 
 	Point updateDirection() {
-        direction = (camera_pos - looking_pos).normalize(); // direction = camera_pos - loking
-
+        direction = (camera_pos - looking_pos); // direction = camera_pos - loking
+        direction = direction / direction.absolute_value(); // normalize
         return direction;
     }
 
 	Point updateRightVector() {
-		right_vector = (up_vector * direction).normalize(); // right = up x direction
-
+		right_vector = (up_vector * direction); // right = up x direction
+        right_vector = right_vector / right_vector.absolute_value();
         return right_vector;
 	}
 
