@@ -4,8 +4,25 @@
 #include<stack>
 
 #include "Matrix.cpp"
+#include "bitmap_image.hpp"
+
 
 using namespace std;
+
+void generateBitmapImage(double screenWidth, double screenHeight, vector<vector<int>> frame_buffer) {
+    
+    bitmap_image image(screenWidth, screenHeight);
+    
+    for(int y = 0; y < screenHeight; y++){
+        for(int x = 0; x < screenWidth; x++){
+            int color = frame_buffer[y][x];
+            image.set_pixel(x, y, palette_colormap[color]);
+        }
+    }
+
+    image.save_image("image.bmp");
+
+}
 
 int main() {
 
@@ -140,8 +157,72 @@ int main() {
     config_in >> screenWidth >> screenHeight;
     config_in.close();
 
-    vector<vector<double> > z_buffer(screenHeight+1, vector<double>(screenWidth+1, 2));
-    vector<vector<int> > frame_buffer(screenHeight+1, vector<int>(screenWidth+1, 49));
+    // cout << screenWidth << screenHeight << endl;
 
+    vector<vector<double>> z_buffer(screenHeight+1, vector<double>(screenWidth+1, 2));
+    vector<vector<int>> frame_buffer(screenHeight+1, vector<int>(screenWidth+1, 49));
+
+    double dx = 2 / screenWidth, dy = 2 / screenHeight;
+
+    for(Triangle &triangle: triangles) {
+
+        Boundary boundary = triangle.getBoundary();
+
+        int color = rand() % 50;
+
+        for(int y = boundary.upper / dy; y >= boundary.lower/dy-1; y-- ) {
+            for(int x = boundary.left/dx - 1; x <= boundary.right/dx + 1; x++) {
+                
+                // check if inside triangle or not
+
+                Point lamda = triangle.getBarycentricCoordinates(x*dx, y*dy);
     
+                if(lamda.x >= -1e-9 && lamda.y >= -1e-9 && lamda.z >= -1e-9) {
+                   
+                    // inside triangle
+
+                    int row = screenHeight - ( y+screenHeight/2 );
+                    int col = x + screenWidth/2;
+
+                    if(row < 0 || row >= screenHeight) continue;
+                    if(col < 0 || col >= screenWidth) continue;
+
+                    // cout << x*dx << " " << y*dy << endl;
+
+                    //cout << "zvalue" << endl;
+
+                    double zValue = triangle.get_zValue(x*dx, y*dy);
+
+                    // cout << zValue << endl;
+                    
+                    if(zValue > 1 || zValue < -1) continue;
+                    
+                    if(zValue < z_buffer[row][col]) {
+                        z_buffer[row][col] = zValue;
+                        frame_buffer[row][col] = color;
+                    }
+
+                }
+
+            }
+        }
+
+    }
+
+    for (int i = 0; i < screenHeight+1; i++) {
+        for (int j = 0; j < screenWidth+1; j++) {
+            if (z_buffer[i][j] < 1.1) {
+                zBuffer_out << fixed << setprecision(6) << z_buffer[i][j] << "\t";
+            }
+        }
+        zBuffer_out << endl;
+    }
+
+    zBuffer_out.close();
+
+    // bitmap image 
+
+    generateBitmapImage(screenWidth, screenHeight, frame_buffer);
+    
+
 }
