@@ -1,25 +1,21 @@
 #include<math.h>
-#include<iostream>
-#include<iomanip>
 
 #define pi (2*acos(0.0))
 
-using namespace std;
 
 class Point
 {
 public:
-    double x, y, z, t;
+    double x, y, z;
 
     Point(){
-		this->t = 1;
+		
 	};
  
-    Point(double x, double y, double z, double t = 1){
+    Point(double x, double y, double z){
 		this->x = x;
 		this->y = y;
-		this->z = z;
-        this->t = t;
+		this-> z = z;
 	}
 
     // Overloaded addition operator
@@ -50,10 +46,6 @@ public:
         );
     }
 
-    Point operator -(){
-        return Point(-this->x, -this->y, -this->z);
-    }
-
     double dot(const Point& p) const {
         return (x * p.x + y * p.y + z * p.z);
     }
@@ -61,21 +53,4 @@ public:
     double absolute_value() const {
         return sqrt(x*x + y*y + z*z);
     }
-
-    void normalize() {
-        double abs = absolute_value();
-        x = x / abs;
-        y = y / abs;
-        z = z / abs;
-    }
-
-    friend std::ostream& operator<<(std::ostream& os, const Point p);
-
 };
-
-
-
-ostream &operator<<(ostream &os, Point p){
-    os << fixed << setprecision(7) << p.x << " " << p.y << " " << p.z;
-    return os;
-}

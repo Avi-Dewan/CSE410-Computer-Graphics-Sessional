@@ -298,7 +298,7 @@ public:
 
 			double angle = atan(v_y / v_x) * (180/pi);
 
-			if(v_x > 0 ) theta = angle;
+			if(v_x > 0 ) theta = angle; 
 			else theta = 180 + angle;
 		}
 
@@ -403,8 +403,6 @@ void display() {
     //ADD this line in the end --- if you use double buffer (i.e. GL_DOUBLE)
 
 	glutSwapBuffers();
-
-    
 }
 
 
