@@ -94,15 +94,12 @@ void square3D(double i) {
 void sixSqures(double radius, double a, double shift) {
 
      for(int i = 0; i < 6; i++) {
-         glColor3f(1, 1, 1);
-       
-
+        glColor3f(1, 1, 1);
         glPushMatrix();
         glRotatef(i*30, 0, 0, 1);
         glTranslatef(i*shift, i*shift, 0);
         square3D(i*10*radius);
 		glPopMatrix();
-
     }
 }
 
