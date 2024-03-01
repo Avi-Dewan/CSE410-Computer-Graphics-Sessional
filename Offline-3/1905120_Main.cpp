@@ -8,8 +8,6 @@ using namespace std;
 
 double cameraHeight;
 double cameraAngle;
-int drawgrid;
-int drawaxes;
 double angle;
 
 int recursionLevel;
@@ -21,138 +19,110 @@ vector <Light*> lights;
 vector <SpotLight*> spotlights;
 
 int imageCount = 1;
-
-// camera
-Camera camera;
-
-double ROT_ANG = pi/180;
 int numSegments;
-
-// draw axes
-void drawAxes()
-{
-	if(drawaxes==1)
-	{
-		glColor3f(1.0, 1.0, 1.0);
-		glBegin(GL_LINES);
-		{
-			glVertex3f( 100,0,0);
-			glVertex3f(-100,0,0);
-
-			glVertex3f(0,-100,0);
-			glVertex3f(0, 100,0);
-
-			glVertex3f(0,0, 100);
-			glVertex3f(0,0,-100);
-		}
-		glEnd();
-	}
-}
-
-// draws grid
-void drawGrid()
-{
-	int i;
-	if(drawgrid==1)
-	{
-		glColor3f(0.6, 0.6, 0.6);	//grey
-		glBegin(GL_LINES);
-		{
-			for(i=-8;i<=8;i++){
-
-				if(i==0)
-					continue;	//SKIP the MAIN axes
-
-				//lines parallel to Y-axis
-				glVertex3f(i*10, -90, 0);
-				glVertex3f(i*10,  90, 0);
-
-				//lines parallel to X-axis
-				glVertex3f(-90, i*10, 0);
-				glVertex3f( 90, i*10, 0);
-			}
-		}
-		glEnd();
-	}
-}
-
 
 double windowWidth = 500, windowHeight = 500;
 double viewAngle = 80;
 
+// camera
+Camera camera;
+
+
+// draw axes
+void drawAxes()
+{
+	glColor3f(1.0, 1.0, 1.0);
+	glBegin(GL_LINES);
+	{
+		glVertex3f( 100,0,0);
+		glVertex3f(-100,0,0);
+
+		glVertex3f(0,-100,0);
+		glVertex3f(0, 100,0);
+
+		glVertex3f(0,0, 100);
+		glVertex3f(0,0,-100);
+	}
+	glEnd();
+	
+}
+
+int getNearestObjectIndex(Ray ray, Color &color) {
+	double tMin = -1;
+	double nearestObjectIndex = -1, t;
+
+	int noOfObjects = objects.size();
+
+	for(int k=0; k < noOfObjects; k++) {
+		t = objects[k]->intersect(ray, color, 0);
+		if(t > 0 && (nearestObjectIndex == -1 || t<tMin)) {
+			tMin = t , nearestObjectIndex = k;
+		}
+	}
+
+	return nearestObjectIndex;
+}
+
+void maxminColor(Color &color) {
+
+	if(color.r > 1) color.r = 1;
+	if(color.g > 1) color.g = 1;
+	if(color.b > 1) color.b = 1;
+
+	if(color.r < 0) color.r = 0;
+	if(color.g < 0) color.g = 0;
+	if(color.b < 0) color.b = 0;
+}
+
 void capture()
 {
-	cout<<"Capturing Image"<<endl;
+	cout<<"Capturing Image...."<<endl;
+
+	image = bitmap_image(imageWidth, imageHeight);
 
 	// initialize bitmap image and set background color to black
-	for(int i=0;i<imageWidth;i++)
-		for(int j=0;j<imageHeight;j++)
+	for(int i=0; i < imageWidth; i++) {
+		for(int j=0; j < imageHeight; j++) {
 			image.set_pixel(i, j, 0, 0, 0);
+		}
+	}
 	
-	// image.save_image("black.bmp");
-
-	double planeDistance = (windowHeight / 2.0) / tan((pi * viewAngle) / (360.0));
+	double planeDistance = (windowHeight / 2.0) / tan(((pi/2.0) * viewAngle) / (180.0));
 
 	Point topLeft = camera.pos + (camera.look_vector * planeDistance) + (camera.up_vector * (windowHeight / 2.0)) - (camera.right_vector * (windowWidth / 2.0));
 
-	double du = windowWidth / (imageWidth*1.0);
-	double dv = windowHeight / (imageHeight*1.0);
+	double du = windowWidth*1.0 / imageWidth;
+	double dv = windowHeight*1.0 / imageHeight;
 
 	// Choose middle of the grid cell
-	topLeft = topLeft + (camera.right_vector * du / 2.0) - (camera.up_vector * dv / 2.0);
+	topLeft = topLeft + (camera.right_vector * 0.5 * du ) - (camera.up_vector * 0.5 * dv );
 
 	int nearestObjectIndex = -1;
-	double t,tMin;
 
-	for(int i=0;i<imageWidth;i++)
-	{
-		for(int j=0;j<imageHeight;j++)
+	for(int i = 0; i < imageWidth; i++) {
+		for(int j = 0; j < imageHeight; j++)
 		{
 			// calculate current pixel
 			Point pixel = topLeft + (camera.right_vector * du * i) - (camera.up_vector * dv * j);
-
-			// cast ray from EYE to (curPixel-eye) direction ; eye is the position of the camera
+			// cast ray from EYE to (curPixel-eye) direction
 			Ray ray(camera.pos ,pixel-camera.pos);
 			Color color;
 
-			// cout<<"Ray direction "<<ray.dir<<endl;
-
 			// find nearest object
-			tMin = -1;
-			nearestObjectIndex = -1;
-			for(int k=0;k<(int)objects.size();k++)
-			{
-				t = objects[k]->intersect(ray,color, 0);
-				if(t>0 && (nearestObjectIndex == -1 || t<tMin) )
-					tMin = t , nearestObjectIndex = k;
-			}
+			nearestObjectIndex = getNearestObjectIndex(ray, color);
 
-			// if nearest object is found, then shade the pixel
-			if(nearestObjectIndex != -1)
-			{
-				// cout<<"Object "<<nearestObjectIndex<<" intersected"<<endl;
-				// color = objects[nearestObjectIndex]->color;
+			if(nearestObjectIndex != -1){
 				color = Color(0,0,0);
-				// cout<<"Before Color "<<color.r<<" "<<color.g<<" "<<color.b<<endl;
 				double t = objects[nearestObjectIndex]->intersect(ray,color, 1);
-
-				if(color.r > 1) color.r = 1;
-				if(color.g > 1) color.g = 1;
-				if(color.b > 1) color.b = 1;
-
-				if(color.r < 0) color.r = 0;
-				if(color.g < 0) color.g = 0;
-				if(color.b < 0) color.b = 0;
-				
-				// cout<<"After Color "<<color.r<<" "<<color.g<<" "<<color.b<<endl;
+				maxminColor(color);
 				image.set_pixel(i, j, 255*color.r, 255*color.g, 255*color.b);
 			}
 		}
 	}
 
-	image.save_image("Output_1"+to_string(imageCount)+".bmp");
-	imageCount++;
-	cout<<"Saving Image"<<endl;		
+	image.save_image("Output_1"+to_string(imageCount++)+".bmp");
+	
+	cout<<"Image Saaved"<<endl;		
 }
 
 void keyboardHandler(unsigned char key, int x,int y){
@@ -259,14 +229,8 @@ void display(){
 
 	glMatrixMode(GL_MODELVIEW);
 
-
-	/****************************
-	/ Add your objects from here
-	****************************/
 	//add objects
 
-	drawAxes();
-	drawGrid();
 
     for (int i=0; i<objects.size(); i++){
 		Object *object = objects[i];
@@ -287,7 +251,7 @@ void display(){
 }
 
 
-void animate(){
+void idle(){
 	//codes for any changes in Models, Camera
 	glutPostRedisplay();
 }
@@ -362,15 +326,14 @@ void loadData()
 
 void init(){
 	//codes for initialization
-	drawgrid=1;
-	drawaxes=1;
+
 	cameraHeight=150.0;
 	cameraAngle=1.0;
 	angle=0;
 	numSegments = 36;
 
 	loadData();
-	image = bitmap_image(imageWidth, imageHeight);
+	
 
 	//clear the screen
 	glClearColor(0,0,0,0);
@@ -400,14 +363,14 @@ int main(int argc, char **argv){
 	glutInitWindowPosition(0, 0);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);	//Depth, Double buffer, RGB color
 
-	glutCreateWindow("Ray Tracing");
+	glutCreateWindow("Offline-3: Ray Tracing");
 
 	init();
 
 	glEnable(GL_DEPTH_TEST);	//enable Depth Testing
 
 	glutDisplayFunc(display);	//display callback function
-	glutIdleFunc(animate);		//what you want to do in the idle time (when no drawing is occuring)
+	glutIdleFunc(idle);		
 
 	glutKeyboardFunc(keyboardHandler);
 	glutSpecialFunc(specialKeyListener);

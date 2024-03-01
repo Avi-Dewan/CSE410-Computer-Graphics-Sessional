@@ -9,17 +9,6 @@ using namespace std;
 #define pi (2*acos(0.0))
 
 
-
-double determinant(double ara[3][3]){
-	double v1 = ara[0][0] * (ara[1][1] * ara[2][2] - ara[1][2] * ara[2][1]);
-	double v2 = ara[0][1] * (ara[1][0] * ara[2][2] - ara[1][2] * ara[2][0]);
-	double v3 = ara[0][2] * (ara[1][0] * ara[2][1] - ara[1][1] * ara[2][0]);
-	return v1 - v2 + v3;
-}
-
-
-
-
 class Ray{
 public:
     Point origin, dir;
@@ -303,6 +292,95 @@ public:
         }
 };
 
+class Triangle: public Object{
+public:
+    Point a,b,c;
+
+    Triangle(){
+
+    }
+
+    Triangle(Point a, Point b, Point c)
+    {
+        this->a = a;
+        this->b = b;
+        this->c = c;
+    }
+
+    virtual Ray getNormal(Point point, Ray incidentRay)
+    {
+        Point normal = (b-a)^(c-a);
+        normal.normalize();
+
+        double dot = incidentRay.dir*normal;
+        
+        if( dot < 0) return Ray(point, -normal);
+        else return Ray(point, normal);
+    }
+
+    virtual void draw(){
+
+        glColor3f(color.r, color.g, color.b);
+        
+        glBegin(GL_TRIANGLES);
+        {
+            glVertex3f(a.x, a.y, a.z);
+            glVertex3f(b.x, b.y, b.z);
+            glVertex3f(c.x, c.y, c.z);
+        }
+        glEnd();
+    }
+
+    virtual double intersect_T(Ray ray, Color &color, int level){
+
+        Matrix mat1 = Matrix(
+            a.x - ray.origin.x, a.x - c.x, ray.dir.x,
+            a.y - ray.origin.y, a.y - c.y, ray.dir.y,
+            a.z - ray.origin.z, a.z - c.z, ray.dir.z);
+
+        Matrix mat2 = Matrix(
+            a.x - b.x, a.x - ray.origin.x, ray.dir.x,
+            a.y - b.y, a.y - ray.origin.y, ray.dir.y,
+            a.z - b.z, a.z - ray.origin.z, ray.dir.z);
+
+        Matrix mat3 = Matrix(
+            a.x - b.x, a.x - c.x, a.x - ray.origin.x,
+            a.y - b.y, a.y - c.y, a.y - ray.origin.y,
+            a.z - b.z, a.z - c.z, a.z - ray.origin.z);
+
+        Matrix mat = Matrix (
+            a.x - b.x, a.x - c.x, ray.dir.x,
+            a.y - b.y, a.y - c.y, ray.dir.y,
+            a.z - b.z, a.z - c.z, ray.dir.z);
+
+        double determin = mat.determinant();
+
+        if(fabs(determin) < 1e-5) return -1;
+
+        double beta =  mat1.determinant() / determin;
+        double gamma = mat2.determinant() / determin;
+        double t = mat3.determinant() / determin;
+
+        if (beta + gamma < 1 && beta > 0 && gamma > 0 && t > 0){
+            return t;
+        }
+        else{
+            return -1;
+        }
+    }
+
+    // input stream
+    friend istream& operator>>(istream &in, Triangle &t)
+    {
+        in >> t.a >> t.b >> t.c; // 3 vertices
+        in >> t.color.r >> t.color.g >> t.color.b; // color
+        for(int i = 0; i < 4; i++) in >> t.coefficients[i];
+        in >> t.shine;
+        return in;
+    }
+};
+
+
 class General : public Object{
 public:
     double A,B,C,D,E,F,G,H,I,J;
@@ -406,97 +484,6 @@ public:
 
 };
 
-
-
-
-class Triangle: public Object{
-public:
-    Point a,b,c;
-
-    Triangle(){
-
-    }
-
-    Triangle(Point a, Point b, Point c)
-    {
-        this->a = a;
-        this->b = b;
-        this->c = c;
-    }
-
-    virtual Ray getNormal(Point point, Ray incidentRay)
-    {
-        Point normal = (b-a)^(c-a);
-        normal.normalize();
-        
-        if(incidentRay.dir*normal < 0){
-            return Ray(point, -normal);
-        }
-        else{
-            return Ray(point, normal);
-        }
-    }
-
-    virtual void draw(){
-        glColor3f(color.r, color.g, color.b);
-        glBegin(GL_TRIANGLES);
-        {
-            glVertex3f(a.x, a.y, a.z);
-            glVertex3f(b.x, b.y, b.z);
-            glVertex3f(c.x, c.y, c.z);
-        }
-        glEnd();
-    }
-
-    virtual double intersect_T(Ray ray, Color &color, int level){
-
-        Matrix mat1 = Matrix(
-				a.x - ray.origin.x, a.x - c.x, ray.dir.x,
-				a.y - ray.origin.y, a.y - c.y, ray.dir.y,
-				a.z - ray.origin.z, a.z - c.z, ray.dir.z);
-
-        Matrix mat2 = Matrix(
-            a.x - b.x, a.x - ray.origin.x, ray.dir.x,
-            a.y - b.y, a.y - ray.origin.y, ray.dir.y,
-            a.z - b.z, a.z - ray.origin.z, ray.dir.z);
-
-        Matrix mat3 = Matrix(
-            a.x - b.x, a.x - c.x, a.x - ray.origin.x,
-            a.y - b.y, a.y - c.y, a.y - ray.origin.y,
-            a.z - b.z, a.z - c.z, a.z - ray.origin.z);
-
-        Matrix mat = Matrix (
-            a.x - b.x, a.x - c.x, ray.dir.x,
-            a.y - b.y, a.y - c.y, ray.dir.y,
-            a.z - b.z, a.z - c.z, ray.dir.z);
-
-        double determin = mat.determinant();
-
-        if(fabs(determin) < 1e-5) return -1;
-
-        double beta =  mat1.determinant() / determin;
-        double gamma = mat2.determinant() / determin;
-        double t = mat3.determinant() / determin;
-
-        if (beta + gamma < 1 && beta > 0 && gamma > 0 && t > 0){
-            return t;
-        }
-        else{
-            return -1;
-        }
-    }
-
-    // input stream
-    friend istream& operator>>(istream &in, Triangle &t)
-    {
-        in >> t.a >> t.b >> t.c; // 3 vertices
-        in >> t.color.r >> t.color.g >> t.color.b; // color
-        for(int i = 0; i < 4; i++) in >> t.coefficients[i];
-        in >> t.shine;
-        return in;
-    }
-};
-
 class Sphere : public Object{
 public:
         Sphere(){
@@ -508,7 +495,8 @@ public:
 		}
 
         virtual Ray getNormal(Point point, Ray incidentRay){
-            return Ray(point, point - reference_point);
+            Point normal = point - reference_point;
+            return Ray(point, normal);
         }
 
 		virtual void draw(){
@@ -562,45 +550,37 @@ public:
             ray.origin = ray.origin - reference_point; // adjust ray origin
             
             double a = 1;
-            double b = 2 * (ray.dir*ray.origin);
-            double c = (ray.origin*ray.origin) - (length*length);
+            double b = 2 * (ray.dir * ray.origin);
+            double c = (ray.origin * ray.origin) - (length*length);
 
-            
+            double discriminant = b*b-4 *a*c;
 
-            double discriminant = pow(b, 2) - 4 * a * c;
             double t = -1;
-            if (discriminant < 0){
-                t = -1;
-            }
-            else{
+            
+            if(discriminant > 0){
                 
-                if(fabs(a) < 1e-5)
-                {
+                if(fabs(a) < 1e-5){
+
                     t = -c/b;
-                    return t;
-                }
 
-                double t1 = (-b - sqrt(discriminant)) / (2 * a);
-                double t2 = (-b + sqrt(discriminant)) / (2 * a);
+                } else {
 
-                if(t2<t1) swap(t1, t2);
+                    double t1 = (-b - sqrt(discriminant)) / (2 * a);
+                    double t2 = (-b + sqrt(discriminant)) / (2 * a);
 
-                if (t1 > 0){
-                    t = t1;
-                }
-                else if (t2 > 0){
-                    t = t2;
-                }
-                else{
-                    t = -1;
+                    if(t2<t1) swap(t1, t2);
+
+                    if (t1 > 0){
+                        t = t1;
+                    } else if (t2 > 0){
+                        t = t2;
+                    } else { 
+                        t = -1;
+                    }
                 }
             }
 
             return t;
-            // if(level == 0) return t;
-            
-            // Point intersectionPoint = ray.origin + ray.dir * t;
-            // Point normal = intersectionPoint - reference_point;
         }
 
         // input stream
