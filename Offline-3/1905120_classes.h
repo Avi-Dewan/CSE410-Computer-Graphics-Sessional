@@ -450,31 +450,33 @@ public:
 
     virtual double intersect_T(Ray ray, Color &color, int level){
 
-        double betaMat[3][3] = {
-				{a.x - ray.origin.x, a.x - c.x, ray.dir.x},
-				{a.y - ray.origin.y, a.y - c.y, ray.dir.y},
-				{a.z - ray.origin.z, a.z - c.z, ray.dir.z}
-			};
-			double gammaMat[3][3] = {
-				{a.x - b.x, a.x - ray.origin.x, ray.dir.x},
-				{a.y - b.y, a.y - ray.origin.y, ray.dir.y},
-				{a.z - b.z, a.z - ray.origin.z, ray.dir.z}
-			};
-			double tMat[3][3] = {
-				{a.x - b.x, a.x - c.x, a.x - ray.origin.x},
-				{a.y - b.y, a.y - c.y, a.y - ray.origin.y},
-				{a.z - b.z, a.z - c.z, a.z - ray.origin.z}
-			};
-			double AMat[3][3] {
-				{a.x - b.x, a.x - c.x, ray.dir.x},
-				{a.y - b.y, a.y - c.y, ray.dir.y},
-				{a.z - b.z, a.z - c.z, ray.dir.z}
-			};
+        Matrix mat1 = Matrix(
+				a.x - ray.origin.x, a.x - c.x, ray.dir.x,
+				a.y - ray.origin.y, a.y - c.y, ray.dir.y,
+				a.z - ray.origin.z, a.z - c.z, ray.dir.z);
 
-        double Adet = determinant(AMat);
-        double beta = determinant(betaMat) / Adet;
-        double gamma = determinant(gammaMat) / Adet;
-        double t = determinant(tMat) / Adet;
+        Matrix mat2 = Matrix(
+            a.x - b.x, a.x - ray.origin.x, ray.dir.x,
+            a.y - b.y, a.y - ray.origin.y, ray.dir.y,
+            a.z - b.z, a.z - ray.origin.z, ray.dir.z);
+
+        Matrix mat3 = Matrix(
+            a.x - b.x, a.x - c.x, a.x - ray.origin.x,
+            a.y - b.y, a.y - c.y, a.y - ray.origin.y,
+            a.z - b.z, a.z - c.z, a.z - ray.origin.z);
+
+        Matrix mat = Matrix (
+            a.x - b.x, a.x - c.x, ray.dir.x,
+            a.y - b.y, a.y - c.y, ray.dir.y,
+            a.z - b.z, a.z - c.z, ray.dir.z);
+
+        double determin = mat.determinant();
+
+        if(fabs(determin) < 1e-5) return -1;
+
+        double beta =  mat1.determinant() / determin;
+        double gamma = mat2.determinant() / determin;
+        double t = mat3.determinant() / determin;
 
         if (beta + gamma < 1 && beta > 0 && gamma > 0 && t > 0){
             return t;

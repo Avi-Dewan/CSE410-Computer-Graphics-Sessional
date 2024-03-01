@@ -98,6 +98,31 @@ ostream &operator<<(ostream &os, Point p){
     return os;
 }
 
+class Matrix {
+public:
+    double mat[3][3];
+
+    Matrix() {
+    }
+    //9 values and populate them in the matrix
+    Matrix(double a1, double a2, double a3, double b1, double b2, double b3, double c1, double c2, double c3) {
+        mat[0][0] = a1;
+        mat[0][1] = a2;
+        mat[0][2] = a3;
+        mat[1][0] = b1;
+        mat[1][1] = b2;
+        mat[1][2] = b3;
+        mat[2][0] = c1;
+        mat[2][1] = c2;
+        mat[2][2] = c3;
+    }
+
+    double determinant() {
+        return mat[0][0] * (mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1]) - mat[0][1] * (mat[1][0] * mat[2][2] - mat[1][2] * mat[2][0]) + mat[0][2] * (mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]);
+    }
+
+};
+
 class Camera {
 public:
     Point pos;
