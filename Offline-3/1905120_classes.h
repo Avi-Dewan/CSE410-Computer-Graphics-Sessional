@@ -119,21 +119,29 @@ public:
             return phong;
         }
 
-        void addDiffuedAndSpecularColor(Light *light, Color &color, Color intersectionPointColor, double lambertValue, double phong){
+        void addDiffuedAndSpecularColor(Color pl_color, Color &color, Color intersectionPointColor, double lambertValue, double phong){
             // lights[i]->color works as the source intensity, Is here -> add diffused and specular color
             
-            color.r += light->color.r * coefficients[1] * lambertValue * intersectionPointColor.r;
-            color.r += light->color.r * coefficients[2] * pow(phong,shine) * intersectionPointColor.r;
+            color.r += ( pl_color.r * coefficients[1] * lambertValue * intersectionPointColor.r
+                     + pl_color.r * coefficients[2] * pow(phong,shine) * intersectionPointColor.r);
 
-            color.g += light->color.g * coefficients[1] * lambertValue * intersectionPointColor.g;
-            color.g += light->color.g * coefficients[2] * pow(phong,shine) * intersectionPointColor.g;
+            color.g += ( pl_color.g * coefficients[1] * lambertValue * intersectionPointColor.g
+                     + pl_color.g * coefficients[2] * pow(phong,shine) * intersectionPointColor.g);
 
-            color.b += light->color.b * coefficients[1] * lambertValue * intersectionPointColor.b;
-            color.b += light->color.b * coefficients[2] * pow(phong,shine) * intersectionPointColor.b;
+            color.b += ( pl_color.b * coefficients[1] * lambertValue * intersectionPointColor.b
+                     + pl_color.b * coefficients[2] * pow(phong,shine) * intersectionPointColor.b);
 
         }
 
+
+        bool exceedsCutOffAngle(Point lightDir, SpotLight* spotlight) {
+
+            double angle = acos( (lightDir*spotlight->dir )/(lightDir.absolute_value() * spotlight->dir.absolute_value())) * (180.0/pi);
         
+            return (fabs(angle) > spotlight->cutoffAngle);
+        }
+        
+
 		virtual double intersect(Ray ray, Color &color, int level)
         {
             double t = intersect_T(ray, color, level);
@@ -175,7 +183,7 @@ public:
                     double phong = getPhongValue(ray, lightRay, normal, intersectionPoint);
                     // lights[i]->color works as the source intensity, Is here -> add diffused and specular color
 
-                    addDiffuedAndSpecularColor(lights[i], color, intersectionPointColor, lambertValue, phong);
+                    addDiffuedAndSpecularColor(lights[i]->color, color, intersectionPointColor, lambertValue, phong);
                     
                 }
             }
@@ -188,48 +196,36 @@ public:
 
             for(int i = 0; i < spotlights.size(); i++){
 
-                Point lightPosition = spotlights[i]->pointLight.pos;
-                Point lightDirection = intersectionPoint - lightPosition;
-                lightDirection.normalize();
+                Point lightPos = spotlights[i]->pointLight.pos;
 
-                double dot = lightDirection*spotlights[i]->dir;
-                double angle = acos(dot/(lightDirection.absolute_value()*spotlights[i]->dir.absolute_value())) * (180.0/pi);
+                // find direction of light and normalize it
+                Point lightDir = intersectionPoint - lightPos;
+                lightDir.normalize(); 
 
-                if(fabs(angle)<spotlights[i]->cutoffAngle){
+               
 
-                    Ray lightRay = Ray(lightPosition, lightDirection);
-                    Ray normal = getNormal(intersectionPoint,lightRay);
+                if(exceedsCutOffAngle(lightDir, spotlights[i])) continue;
+                
+                // cast ray from light position to intersection point
+                Ray lightRay = Ray(lightPos, lightDir);
+
+                // calculate normal at intersectionPoint
+                Ray normal = getNormal(intersectionPoint, lightRay);
+
+                
+                // check if incedent ray is not obscured by any other object
+                // if not, then add the impact of the light source
+                if(!isRayObscured(lightPos, intersectionPoint, lightRay)){
                     
-                    Ray reflection = Ray(intersectionPoint, lightRay.dir - normal.dir*2*(lightRay.dir*normal.dir));
+                    // lambert value
+                    double lambertValue = getLambertValue(lightRay, normal);
                     
-                    double t2 = (intersectionPoint - lightPosition).absolute_value();
-                    if(t2 < 1e-5) continue;
+                    // phong value
+                    double phong = getPhongValue(ray, lightRay, normal, intersectionPoint);
+                    // spotlights[i]->color works as the source intensity, Is here -> add diffused and specular color
+
+                    addDiffuedAndSpecularColor(spotlights[i]->pointLight.color, color, intersectionPointColor, lambertValue, phong);
                     
-                    bool obscured = false;
-                    
-                    for(Object *obj : objects){
-                        double t3 = obj->intersect_T(lightRay, color, 0);
-                        if(t3 > 0 && t3 + 1e-5 < t2){
-                            obscured = true;
-                            break;
-                        }
-                    }
-                    
-                    if(!obscured){
-                        
-                        double phong = max(0.0,-ray.dir*reflection.dir);
-                        double val = max(0.0, -lightRay.dir*normal.dir);
-                        
-                        color.r += spotlights[i]->pointLight.color.r * coefficients[1] * val * intersectionPointColor.r;
-                        color.r += spotlights[i]->pointLight.color.r * coefficients[2] * pow(phong,shine) * intersectionPointColor.r;
-                        
-                        color.g += spotlights[i]->pointLight.color.g * coefficients[1] * val * intersectionPointColor.g;
-                        color.g += spotlights[i]->pointLight.color.g * coefficients[2] * pow(phong,shine) * intersectionPointColor.g;
-                        
-                        color.b += spotlights[i]->pointLight.color.b * coefficients[1] * val * intersectionPointColor.b;
-                        color.b += spotlights[i]->pointLight.color.b * coefficients[2] * pow(phong,shine) * intersectionPointColor.b;
-                        
-                    }
                 }
             }
 
