@@ -346,27 +346,15 @@ void loadData()
 		spotlights.push_back(spotlight);
 	}
 
-	// for(int i=0;i<spotlights.size();i++){
-	// 	SpotLight* l = spotlights[i];
-	// 	// cout<<"Spotlight "<<spotlight<<endl;
-
-	// 	cout << fixed << setprecision(7) << l->pointLight.pos.x << " " << l->pointLight.pos.y << " " << l->pointLight.pos.z << " " << l->pointLight.color.r << " " << l->pointLight.color.g << " " << l->pointLight.color.b << " " << l->dir.x << " " << l->dir.y << " " << l->dir.z << " " << l->cutoffAngle<<endl;
-
-	// 	// cout<<"Spotlight pos "<<spotlights[i]->pointLight.pos.x<<" "<<spotlights[i]->pointLight.pos.y<<" "<<spotlights[i]->pointLight.pos.z<<endl;
-	// 	// cout<<"Spotlight dir "<<spotlights[i]->pointLight.dir.x<<" "<<spotlights[i]->pointLight.dir.y<<" "<<spotlights[i]->pointLight.dir.z<<endl;
-	// 	// cout<<"Spotlight cutOff "<<spotlights[i]->pointLight.cutOff<<endl;
-	// 	// spotlights[i]->draw();
-	// }
-
         
-
 	Object *floor;
 	floor = new Floor(400, 10);
 	floor->setColor(Color(0.5, 0.5, 0.5));
-	// vector <double> coefficients = {1, 1, 1, 1};
+
 	vector <double> coefficients = {0.4, 0.2, 0.2, 0.2};
-	// vector <double> coefficients = {0.2, 0.2, 0.2, 0.2};
+
 	floor->setCoefficients(coefficients);
+	
 	objects.push_back(floor);
 	
 	

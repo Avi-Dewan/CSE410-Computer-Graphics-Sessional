@@ -5,16 +5,16 @@ using namespace std;
 
 #define pi (2*acos(0.0))
 
-extern bitmap_image image;
 
-struct Color{
+class Color{
+public:
     double r,g,b;
-    Color()
-    {
-        r = g = b = 0.0;
-    }
 
-    Color(double r, double g, double b) : r(r), g(g), b(b) {}
+    Color(double r = 0, double g = 0, double b = 0){
+        this->r = r;
+        this->g = g;
+        this->b = b;
+    }
 };
 
 class Point
@@ -181,20 +181,6 @@ public:
         rotateVectorWRT_AxisByTheta(right_vector, look_vector, pi/180);
         rotateVectorWRT_AxisByTheta(up_vector, look_vector, pi/180);
     }
-
-
-	// Point updateDirection() {
-    //     direction = (camera_pos - looking_pos); // direction = camera_pos - loking
-    //     direction = direction / direction.absolute_value(); // normalize
-    //     return direction;
-    // }
-
-	// Point updateRightVector() {
-	// 	right_vector = (up_vector * direction); // right = up x direction
-    //     right_vector = right_vector / right_vector.absolute_value();
-    //     return right_vector;
-	// }
-
 };
 
 double determinant(double ara[3][3]){
