@@ -197,9 +197,18 @@ public:
 
 };
 
+double determinant(double ara[3][3]){
+	double v1 = ara[0][0] * (ara[1][1] * ara[2][2] - ara[1][2] * ara[2][1]);
+	double v2 = ara[0][1] * (ara[1][0] * ara[2][2] - ara[1][2] * ara[2][0]);
+	double v3 = ara[0][2] * (ara[1][0] * ara[2][1] - ara[1][1] * ara[2][0]);
+	return v1 - v2 + v3;
+}
+
 
 // pointlight
-struct Light{
+class Light{
+public:
+    
     Point pos;
     Color color;
 
@@ -223,7 +232,8 @@ struct Light{
 };
 
 // spotlight
-struct SpotLight{
+class SpotLight{
+public:
     Light pointLight;
     Point dir;
     double cutoffAngle; // this is different from the spotlight
@@ -253,7 +263,8 @@ struct SpotLight{
 };
 
 
-struct Ray{
+class Ray{
+public:
     Point origin, dir;
     
     Ray(Point origin, Point dir){
@@ -495,7 +506,8 @@ public:
         }
 };
 
-struct General : public Object{
+class General : public Object{
+public:
     double A,B,C,D,E,F,G,H,I,J;
 
     General(){
@@ -599,16 +611,11 @@ struct General : public Object{
 
 };
 
-double determinant(double ara[3][3]){
-	double v1 = ara[0][0] * (ara[1][1] * ara[2][2] - ara[1][2] * ara[2][1]);
-	double v2 = ara[0][1] * (ara[1][0] * ara[2][2] - ara[1][2] * ara[2][0]);
-	double v3 = ara[0][2] * (ara[1][0] * ara[2][1] - ara[1][1] * ara[2][0]);
-	return v1 - v2 + v3;
-}
 
 
-struct Triangle: public Object
-{
+
+class Triangle: public Object{
+public:
     Point a,b,c;
 
     Triangle(){
@@ -693,8 +700,8 @@ struct Triangle: public Object
     }
 };
 
-struct Sphere : public Object{
-
+class Sphere : public Object{
+public:
         Sphere(){
         }
 
@@ -809,8 +816,8 @@ struct Sphere : public Object{
         }
 };
 
-struct Floor : public Object{
-
+class Floor : public Object{
+public:
     int tiles;
 
     Floor(){
