@@ -71,86 +71,119 @@ public:
 
 		void setCoefficients(vector<double> coefficients){
             this->coefficients = coefficients;
-        }   
+        }
 
-        virtual void draw() = 0;
-		virtual double intersectHelper(Ray ray, Color &color, int level) = 0;
-        virtual Ray getNormal(Point point, Ray incidentRay) = 0;
-		virtual double intersect(Ray ray, Color &color, int level)
-        {
-            double t = intersectHelper(ray, color, level);
 
-            if(t < 0) return -1;
-            if(level == 0) return t;
+        Point getIntersectionPoint(Ray ray, double t){
+            return ray.origin + ray.dir*t;
+        }
 
-            // find intersection point and it's color
-            Point intersectionPoint = ray.origin + ray.dir*t;
-            Color colorAtIntersection = getColorAt(intersectionPoint);
+        void addAmbiance(Color &color, Color intersectionPointColor){
+            color.r = intersectionPointColor.r * coefficients[0];
+            color.g = intersectionPointColor.g * coefficients[0];
+            color.b = intersectionPointColor.b * coefficients[0];
+        }
 
-            // update color with ambience (thing will become dimmer)
-            color.r = colorAtIntersection.r * coefficients[0];
-            color.g = colorAtIntersection.g * coefficients[0];
-            color.b = colorAtIntersection.b * coefficients[0];
+        bool isRayObscured(Point lightPos, Point intersectionPoint, Ray lightRay){
 
-            // cout<< " Lights size " << lights.size() << endl;
+                double t = (intersectionPoint - lightPos).absolute_value();
 
-            for(int i = 0; i < lights.size(); i++){
-
-                Point lightPosition = lights[i]->pos;
-                Point lightDirection = intersectionPoint - lightPosition;
-                lightDirection.normalize();
-                
-                // cast incident ray, from light position to intersection point
-                Ray lightRay = Ray(lightPosition, lightDirection);
-
-                // calculate normal at intersectionPoint
-                Ray normal = getNormal(intersectionPoint,lightRay);
-
-                /**
-                 * @brief check if incedent ray is not obstructed by any other object
-                 * 
-                 */
-                
-                double t2 = (intersectionPoint - lightPosition).absolute_value();
-                if(t2 < 1e-5) continue;
+                // if(t2 < 1e-5) continue;
 
                 bool obscured = false;
 
                 for(Object *obj : objects){
-                    double t3 = obj->intersectHelper(lightRay, color, 0);
-                    if(t3 > 0 && t3 + 1e-5 < t2){
+
+                    double t2 = obj->intersect_T(lightRay, color, 0);
+
+                    if(t2 > 0 && t2 + 1e-5 < t){
                         obscured = true;
                         break;
                     }
                 }
 
-                if(!obscured){
+                return obscured;
+        }
+
+        double getLambertValue( Ray lightRay, Ray normal){
+            
+            double lambertValue = max(0.0, -lightRay.dir*normal.dir);
+            return lambertValue;
+        }
+
+        double getPhongValue(Ray ray, Ray lightRay, Ray normal, Point intersectionPoint){
+            
+            Ray reflection = Ray(intersectionPoint, lightRay.dir - normal.dir*2*(lightRay.dir*normal.dir));
+            double phong = max(0.0,-ray.dir*reflection.dir);
+
+            return phong;
+        }
+
+        void addDiffuedAndSpecularColor(Light *light, Color &color, Color intersectionPointColor, double lambertValue, double phong){
+            // lights[i]->color works as the source intensity, Is here -> add diffused and specular color
+            
+            color.r += light->color.r * coefficients[1] * lambertValue * intersectionPointColor.r;
+            color.r += light->color.r * coefficients[2] * pow(phong,shine) * intersectionPointColor.r;
+
+            color.g += light->color.g * coefficients[1] * lambertValue * intersectionPointColor.g;
+            color.g += light->color.g * coefficients[2] * pow(phong,shine) * intersectionPointColor.g;
+
+            color.b += light->color.b * coefficients[1] * lambertValue * intersectionPointColor.b;
+            color.b += light->color.b * coefficients[2] * pow(phong,shine) * intersectionPointColor.b;
+
+        }
+
+        
+		virtual double intersect(Ray ray, Color &color, int level)
+        {
+            double t = intersect_T(ray, color, level);
+
+            if(level == 0) return t;
+
+            // find intersection point and it's color
+            Point intersectionPoint = getIntersectionPoint(ray, t);
+            Color intersectionPointColor = getColorAt(intersectionPoint);
+
+            // add ambiance in the color
+            addAmbiance(color, intersectionPointColor);
+
+            // for each point light source
+
+            for(int i = 0; i < lights.size(); i++){
+
+                Point lightPos = lights[i]->pos;
+
+                // find direction of light and normalize it
+                Point lightDir = intersectionPoint - lightPos;
+                lightDir.normalize(); 
+                
+                // cast ray from light position to intersection point
+                Ray lightRay = Ray(lightPos, lightDir);
+
+                // calculate normal at intersectionPoint
+                Ray normal = getNormal(intersectionPoint, lightRay);
+
+                
+                // check if incedent ray is not obscured by any other object
+                // if not, then add the impact of the light source
+                if(!isRayObscured(lightPos, intersectionPoint, lightRay)){
                     
                     // lambert value
-                    double val = max(0.0, -lightRay.dir*normal.dir);
+                    double lambertValue = getLambertValue(lightRay, normal);
                     
-                    // find reflected ray
-                    Ray reflection = Ray(intersectionPoint, lightRay.dir - normal.dir*2*(lightRay.dir*normal.dir));
-                    double phong = max(0.0,-ray.dir*reflection.dir);
+                    // phong value
+                    double phong = getPhongValue(ray, lightRay, normal, intersectionPoint);
+                    // lights[i]->color works as the source intensity, Is here -> add diffused and specular color
+
+                    addDiffuedAndSpecularColor(lights[i], color, intersectionPointColor, lambertValue, phong);
                     
-                    // update diffuse and specular components
-                    // lights[i]->color works as the source intensity, Is here
-
-                    color.r += lights[i]->color.r * coefficients[1] * val * colorAtIntersection.r;
-                    color.r += lights[i]->color.r * coefficients[2] * pow(phong,shine) * colorAtIntersection.r;
-
-                    color.g += lights[i]->color.g * coefficients[1] * val * colorAtIntersection.g;
-                    color.g += lights[i]->color.g * coefficients[2] * pow(phong,shine) * colorAtIntersection.g;
-
-                    color.b += lights[i]->color.b * coefficients[1] * val * colorAtIntersection.b;
-                    color.b += lights[i]->color.b * coefficients[2] * pow(phong,shine) * colorAtIntersection.b;
-
                 }
             }
 
-            /**
-             * @brief same calculation as above, but for spotlights
-             * Do until ray cast from light_pos to intersectionPoint exceeds cutoff-angle for the light source
+            /* For spotlights 
+             * same calculation as above, unless
+             *  the ray cast from light_pos to intersectionPoint
+             *  exceeds cutoff-angle for the light source
              */
 
             for(int i = 0; i < spotlights.size(); i++){
@@ -175,7 +208,7 @@ public:
                     bool obscured = false;
                     
                     for(Object *obj : objects){
-                        double t3 = obj->intersectHelper(lightRay, color, 0);
+                        double t3 = obj->intersect_T(lightRay, color, 0);
                         if(t3 > 0 && t3 + 1e-5 < t2){
                             obscured = true;
                             break;
@@ -187,14 +220,14 @@ public:
                         double phong = max(0.0,-ray.dir*reflection.dir);
                         double val = max(0.0, -lightRay.dir*normal.dir);
                         
-                        color.r += spotlights[i]->pointLight.color.r * coefficients[1] * val * colorAtIntersection.r;
-                        color.r += spotlights[i]->pointLight.color.r * coefficients[2] * pow(phong,shine) * colorAtIntersection.r;
+                        color.r += spotlights[i]->pointLight.color.r * coefficients[1] * val * intersectionPointColor.r;
+                        color.r += spotlights[i]->pointLight.color.r * coefficients[2] * pow(phong,shine) * intersectionPointColor.r;
                         
-                        color.g += spotlights[i]->pointLight.color.g * coefficients[1] * val * colorAtIntersection.g;
-                        color.g += spotlights[i]->pointLight.color.g * coefficients[2] * pow(phong,shine) * colorAtIntersection.g;
+                        color.g += spotlights[i]->pointLight.color.g * coefficients[1] * val * intersectionPointColor.g;
+                        color.g += spotlights[i]->pointLight.color.g * coefficients[2] * pow(phong,shine) * intersectionPointColor.g;
                         
-                        color.b += spotlights[i]->pointLight.color.b * coefficients[1] * val * colorAtIntersection.b;
-                        color.b += spotlights[i]->pointLight.color.b * coefficients[2] * pow(phong,shine) * colorAtIntersection.b;
+                        color.b += spotlights[i]->pointLight.color.b * coefficients[1] * val * intersectionPointColor.b;
+                        color.b += spotlights[i]->pointLight.color.b * coefficients[2] * pow(phong,shine) * intersectionPointColor.b;
                         
                     }
                 }
@@ -256,6 +289,16 @@ public:
             return t;
         }
 
+        virtual void draw() {
+
+        }
+
+		virtual double intersect_T(Ray ray, Color &color, int level) {
+            return -1;
+        }
+        
+        virtual Ray getNormal(Point point, Ray incidentRay) = 0;
+
         // destructor
         virtual ~Object(){
             coefficients.clear();
@@ -307,7 +350,7 @@ public:
     }
 
 
-    virtual double intersectHelper(Ray ray, Color &color, int level){
+    virtual double intersect_T(Ray ray, Color &color, int level){
 
         double X0 = ray.origin.x;
         double Y0 = ray.origin.y;
@@ -410,7 +453,7 @@ public:
         glEnd();
     }
 
-    virtual double intersectHelper(Ray ray, Color &color, int level){
+    virtual double intersect_T(Ray ray, Color &color, int level){
 
         double betaMat[3][3] = {
 				{a.x - ray.origin.x, a.x - c.x, ray.dir.x},
@@ -517,7 +560,7 @@ public:
 			}
 		}
 
-        virtual double intersectHelper(Ray ray, Color &color, int level){
+        virtual double intersect_T(Ray ray, Color &color, int level){
 
             ray.origin = ray.origin - reference_point; // adjust ray origin
             
@@ -632,7 +675,7 @@ public:
 		}
     }
 
-    virtual double intersectHelper(Ray ray, Color &color, int level){
+    virtual double intersect_T(Ray ray, Color &color, int level){
         Point normal = Point(0, 0, 1);
         double dotP = normal * ray.dir;
         
