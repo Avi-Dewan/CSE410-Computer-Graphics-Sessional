@@ -1,2 +1,2 @@
-g++ 1905120_main.cpp -o main -lglut -lGLU -lGL
+g++ 1905120_Main.cpp -o main -lglut -lGLU -lGL
 ./main
