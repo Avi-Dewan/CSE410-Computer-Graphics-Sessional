@@ -229,10 +229,11 @@ public:
                 }
             }
 
-            /**
-             * @brief RECURSIVE REFLECTION
-             * 
-             */
+            // Recursive Reflection
+            /*
+                Do the same calculations as camera rays (i.e. the ones cast from
+                the eye). The recursion_level (given as input) controls how many times a ray will be reflected when incident upon objects (shapes).
+            */
 
             if(level < recursionLevel){
                 // if(level > 1) cout << "Recursion level " << level << endl;
@@ -316,14 +317,16 @@ public:
 
     virtual Ray getNormal(Point point, Ray incidentRay)
     {
-        Point dir(2*A*point.x + D*point.y + E*point.z + G,
-               2*B*point.y + D*point.x + F*point.z + H,
-               2*C*point.z + E*point.x + F*point.y + I);
+        double nomal_x = 2*A*point.x + D*point.y + E*point.z + G;
+        double nomal_y = 2*B*point.y + D*point.x + F*point.z + H;
+        double nomal_z = 2*C*point.z + E*point.x + F*point.y + I;
 
-        return Ray(point, dir);
+        Point normal(nomal_x, nomal_y, nomal_z);
+
+        return Ray(point, normal);
     }
 
-    bool ok(Point point)
+    bool checkOk(Point point)
     {
         if(fabs(length) > 1e-5){
             if(point.x < reference_point.x) return false;
@@ -348,43 +351,39 @@ public:
 
     virtual double intersect_T(Ray ray, Color &color, int level){
 
-        double X0 = ray.origin.x;
-        double Y0 = ray.origin.y;
-        double Z0 = ray.origin.z;
+        double x0 = ray.origin.x;
+        double y0 = ray.origin.y;
+        double z0 = ray.origin.z;
 
-        double X1 = ray.dir.x;
-        double Y1 = ray.dir.y;
-        double Z1 = ray.dir.z;
+        double x1 = ray.dir.x;
+        double y1 = ray.dir.y;
+        double z1 = ray.dir.z;
 
-        double C0 = A*X1*X1 + B*Y1*Y1 + C*Z1*Z1 + D*X1*Y1 + E*X1*Z1 + F*Y1*Z1;
-        double C1 = 2*A*X0*X1 + 2*B*Y0*Y1 + 2*C*Z0*Z1 + D*(X0*Y1 + X1*Y0) + E*(X0*Z1 + X1*Z0) + F*(Y0*Z1 + Y1*Z0) + G*X1 + H*Y1 + I*Z1;
-        double C2 = A*X0*X0 + B*Y0*Y0 + C*Z0*Z0 + D*X0*Y0 + E*X0*Z0 + F*Y0*Z0 + G*X0 + H*Y0 + I*Z0 + J;
+        double a = A*x1*x1 + B*y1*y1 + C*z1*z1 + D*x1*y1 + E*x1*z1 + F*y1*z1;
+        double b = 2*A*x0*x1 + 2*B*y0*y1 + 2*C*z0*z1 + D*(x0*y1 + x1*y0) + E*(x0*z1 + x1*z0) + F*(y0*z1 + y1*z0) + G*x1 + H*y1 + I*z1;
+        double c = A*x0*x0 + B*y0*y0 + C*z0*z0 + D*x0*y0 + E*x0*z0 + F*y0*z0 + G*x0 + H*y0 + I*z0 + J;
 
-        double discriminant = C1*C1 - 4*C0*C2;
+        double discriminant = b*b - 4*a*c;
+
         if(discriminant < 0) return -1;
-        if(fabs(C0) < 1e-5) {
-            return -C2/C1;
-        }
-        double t1 = (-C1 - sqrt(discriminant))/(2*C0);
-        double t2 = (-C1 + sqrt(discriminant))/(2*C0);
+
+        if(fabs(a) < 1e-5) return -c/b;
+        
+        double t1 = (-b - sqrt(discriminant))/(2*a);
+        double t2 = (-b + sqrt(discriminant))/(2*a);
 
         if(t1 < 0 && t2 < 0) return -1;
-
-        // cout<<"t1 "<<t1<<" t2 "<<t2<<endl;
-
         if(t2<t1) swap(t1,t2);
-
         if(t1 > 0) {
-            // cout<<"t1 "<<t1<<endl;
-            Point intersectionPoint = ray.origin + ray.dir*t1;
-            if(ok(intersectionPoint)){
+            Point intersectionPoint = getIntersectionPoint(ray, t1);
+
+            if(checkOk(intersectionPoint)){
                 return t1;
             }
         }
         if(t2 > 0) {
-            // cout<<"t2 "<<t2<<endl;
-            Point intersectionPoint = ray.origin + ray.dir*t2;
-            if(ok(intersectionPoint)){
+            Point intersectionPoint = getIntersectionPoint(ray, t2);
+            if(checkOk(intersectionPoint)){
                 return t2;
             }
         }
