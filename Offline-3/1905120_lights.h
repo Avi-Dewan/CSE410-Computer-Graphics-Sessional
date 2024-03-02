@@ -9,21 +9,20 @@ public:
 
     void draw()
     {
-        glPointSize(5);
+        glPointSize(8);
         glBegin(GL_POINTS);
         glColor3f(color.r, color.g, color.b);
         glVertex3f(pos.x, pos.y, pos.z);
         glEnd();
     }
 
-    // input stream
-    friend istream& operator>>(istream &in, Light &l)
+    
+    friend istream& operator>>(istream &input, Light &lt)
     {
-        in >> l.pos.x >> l.pos.y >> l.pos.z;
-        in >> l.color.r >> l.color.g >> l.color.b;
-        return in;
+        input >> lt.pos.x >> lt.pos.y >> lt.pos.z;
+        input >> lt.color.r >> lt.color.g >> lt.color.b;
+        return input;
     }
-
 };
 
 // spotlight
@@ -38,7 +37,8 @@ public:
         Color color = pointLight.color;
         Point pos = pointLight.pos;
 
-        glPointSize(15);
+        glPointSize(18);
+
         glBegin(GL_POINTS);
         glColor3f(color.r, color.g, color.b);
         glVertex3f(pos.x, pos.y, pos.z);
@@ -46,13 +46,13 @@ public:
     }
 
     // input stream
-    friend istream& operator>>(istream &in, SpotLight &l)
+    friend istream& operator>>(istream &input, SpotLight &spt)
     {
-        in >> l.pointLight.pos;
-        in >> l.pointLight.color.r >> l.pointLight.color.g >> l.pointLight.color.b;
-        in >> l.dir;
-        in >> l.cutoffAngle;
-        return in;
+        input >> spt.pointLight.pos;
+        input >> spt.pointLight.color.r >> spt.pointLight.color.g >> spt.pointLight.color.b;
+        input >> spt.dir;
+        input >> spt.cutoffAngle;
+        return input;
     }
 
 };

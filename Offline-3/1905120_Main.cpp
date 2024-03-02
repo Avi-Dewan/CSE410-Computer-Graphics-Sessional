@@ -6,9 +6,7 @@ using namespace std;
 
 #define pi (2*acos(0.0))
 
-double cameraHeight;
-double cameraAngle;
-double angle;
+
 
 int recursionLevel;
 int imageHeight,imageWidth;
@@ -20,6 +18,9 @@ vector <SpotLight*> spotlights;
 
 int imageCount = 1;
 int numSegments;
+double cameraHeight;
+double cameraAngle;
+double angle;
 
 double windowWidth = 500, windowHeight = 500;
 double viewAngle = 80;
@@ -258,56 +259,60 @@ void idle(){
 
 void loadData()
 {
-	ifstream in("scene.txt");
-	in >> recursionLevel >> imageHeight;
+	ifstream input("scene.txt");
 
+	int noOfPixels;
+
+	input >> recursionLevel >> noOfPixels;
+
+	imageHeight = noOfPixels;
 	imageWidth = imageHeight;
 
-	int objCount;
-	in >> objCount;
+	int noObjs;
 
-	for(int i=0;i<objCount;i++)
+	input >> noObjs;
+
+	for(int i=0; i< noObjs; i++)
 	{
-		string objType;
-		in >> objType;
+		string type;
+		input >> type;
 
 		Object *obj;
 
-		if(objType == "sphere"){
+		if(type == "sphere"){
 			obj = new Sphere();
-			in >> *((Sphere *)obj);
+			input >> *((Sphere *)obj);
 		}
-		else if(objType == "triangle"){
+		else if(type == "triangle"){
 			obj = new Triangle();
-			in >> *((Triangle *)obj);
+			input >> *((Triangle *)obj);
 		}
-		else if(objType == "general"){
-			// obj = new Plane();
+		else if(type == "general"){
 			obj = new General();
-			in >> *((General *)obj);
-		}
-		else{
-			cout<<objType<<" is not a valid object type"<<endl;
+			input >> *((General *)obj);
 		}
 		objects.push_back(obj);
 	}
 
-	int lightCount;
-	in >> lightCount;
+	int noOfLights;
+	input >> noOfLights;
 
-	for(int i=0;i<lightCount;i++){
+	for(int i=0; i<noOfLights; i++) {
+
 		Light *light = new Light();
-		in >> *light;
+		input >> *light;
 		lights.push_back(light);
 	}
 
-	int spotlightCount;
-	in >> spotlightCount;
+	int noOfspotLights;
+	input >> noOfspotLights;
 
-	for(int i=0;i<spotlightCount;i++){
+	for(int i=0;i<noOfspotLights;i++){
+
 		SpotLight *spotlight = new SpotLight();
-		in >> *spotlight;
+		input >> *spotlight;
 		spotlights.push_back(spotlight);
+		
 	}
 
         
@@ -349,7 +354,7 @@ void init(){
 
 	//give PERSPECTIVE parameters
 	gluPerspective(80,	1,	1,	1000.0);
-	//field of view in the Y (vertically)
+	//field of view the Y (vertically)
 	//aspect ratio that determines the field of view in the X direction (horizontally)
 	//near distance
 	//far distance

@@ -168,7 +168,7 @@ public:
             Point intersectionPoint = getIntersectionPoint(ray, t);
             Color intersectionPointColor = getColorAt(intersectionPoint);
 
-            // add ambiance in the color
+            // add ambiance input the color
             addAmbiance(color, intersectionPointColor);
 
             // for each point light source
@@ -269,7 +269,7 @@ public:
                     
                     double t = objects[nearestObjectIndex]->intersect(reflectionRay, colorReflection, level+1);
 
-                    // colorReflection will be updated while in the subsequent call
+                    // colorReflection will be updated while input the subsequent call
                     // update color 
                     
                     color.r += colorReflection.r * coefficients[3];
@@ -376,14 +376,13 @@ public:
         }
     }
 
-    // input stream
-    friend istream& operator>>(istream &in, Triangle &t)
+    friend istream& operator>>(istream &input, Triangle &t)
     {
-        in >> t.a >> t.b >> t.c; // 3 vertices
-        in >> t.color.r >> t.color.g >> t.color.b; // color
-        for(int i = 0; i < 4; i++) in >> t.coefficients[i];
-        in >> t.shine;
-        return in;
+        input >> t.a >> t.b >> t.c; // 3 vertices
+        input >> t.color.r >> t.color.g >> t.color.b; // colors
+        for(int i = 0; i < 4; i++) input >> t.coefficients[i];
+        input >> t.shine;
+        return input;
     }
 };
 
@@ -478,16 +477,21 @@ public:
     }
     
     // input stream
-    friend istream& operator>>(istream &in, General &g)
+    friend istream& operator>>(istream &input, General &gen)
     {
-        in >> g.A >> g.B >> g.C >> g.D >> g.E >> g.F >> g.G >> g.H >> g.I >> g.J;
-        in >> g.reference_point >> g.length >> g.width >> g.height;
+        input >> gen.A >> gen.B >> gen.C >> gen.D >> gen.E >> gen.F >> gen.G >> gen.H >> gen.I >> gen.J;
 
-        in >> g.color.r >> g.color.g >> g.color.b; // color
-        for(int i = 0; i < 4; i++) in >> g.coefficients[i];
-        in >> g.shine;
-        return in;
+        input >> gen.reference_point >> gen.length >> gen.width >> gen.height;
+
+        input >> gen.color.r >> gen.color.g >> gen.color.b; 
+
+        for(int i = 0; i < 4; i++) input >> gen.coefficients[i];
+
+        input >> gen.shine;
+
+        return input;
     }
+   
 
 };
 
@@ -610,23 +614,28 @@ public:
         }
 
         // input stream
-        friend std::istream& operator>>(std::istream& in, Sphere& s){
-            in >> s.reference_point >> s.length; // center and radius
-            in >> s.color.r >> s.color.g >> s.color.b; // color
-            for(int i = 0; i < 4; i++) in >> s.coefficients[i];
-            in >> s.shine;
-            return in;
+        friend std::istream& operator>>(std::istream& input, Sphere& s){
+            input >> s.reference_point >> s.length; // center and radius
+
+            input >> s.color.r >> s.color.g >> s.color.b; // color
+
+            for(int i = 0; i < 4; i++) input >> s.coefficients[i];
+
+            input >> s.shine;
+
+            return input;
+
         }
 };
 
 class Floor : public Object {
 public:
-    int tiles;
+    int noTiles;
 
     Floor(){
         int floorWidth = 400, tileWidth = 10;
 
-        tiles = floorWidth / tileWidth;
+        noTiles = floorWidth / tileWidth;
 
         reference_point = Point(-floorWidth / 2, -floorWidth / 2, 0);
         length = tileWidth;
@@ -637,7 +646,7 @@ public:
         int X = (point.x - reference_point.x) / length;
 		int Y = (point.y - reference_point.y) / length;
 
-        if(X<0 || X >= tiles || Y < 0 || Y >= tiles){
+        if(X<0 || X >= noTiles || Y < 0 || Y >= noTiles){
             return Color(0,0,0);
         }
 
@@ -655,13 +664,18 @@ public:
         else return Ray(point, Point(0, 0, -1));
     }
 
+    void setColor(int x) {
+        if (( x% 2) == 0) glColor3f(1, 1, 1);
+		else glColor3f(0, 0, 0);
+    }
+
     virtual void draw(){
 
-        for (int i = 0; i < tiles; i++) {
-			for (int j = 0; j < tiles; j++){
+        for (int i = 0; i < noTiles; i++) {
 
-				if (((i + j) % 2) == 0) glColor3f(1, 1, 1);
-				else glColor3f(0, 0, 0);
+			for (int j = 0; j < noTiles; j++){
+
+				setColor(i+j);
 
 				glBegin(GL_QUADS);
 				{
