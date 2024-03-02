@@ -498,34 +498,50 @@ public:
             Point normal = point - reference_point;
             return Ray(point, normal);
         }
+        
+        vector<vector<Point>> generatePoints(int stacks, int slices) {
+
+            vector<vector<Point>> points;
+
+            double stack_angle = (double)(pi/2) / stacks;
+            double slice_angle = (double)(2*pi) / slices;
+
+            for(int i = 0; i <= stacks; i++) {
+                double h = length*sin(i*stack_angle);
+                double r = length*cos(i*stack_angle);
+
+                vector<Point> stack_points;
+
+                for(int j = 0; j  <= slices; j++) {
+                    Point p(0, 0, 0);
+                    p.x = r*cos(j*slice_angle);
+                    p.y = r*sin(j*slice_angle);
+                    p.z = h;
+                    stack_points.push_back(p);
+                }
+
+                points.push_back(stack_points);
+
+            }
+            return points;
+        }
+
 
 		virtual void draw(){
             int stacks = 30;
 			int slices = 20;
 
-			Point points[100][100];
-			int i, j;
-			double h, r;
-			// generate points
-			for (i = 0; i <= stacks; i++)
-			{
-				h = length * sin(((double)i / (double)stacks) * (pi / 2));
-				r = length * cos(((double)i / (double)stacks) * (pi / 2));
-				for (j = 0; j <= slices; j++)
-				{
-					points[i][j].x = r * cos(((double)j / (double)slices) * 2 * pi);
-					points[i][j].y = r * sin(((double)j / (double)slices) * 2 * pi);
-					points[i][j].z = h;
-				}
-			}
+            vector<vector<Point>> points = generatePoints(stacks, slices);
+			
 			//draw quads using generated points
-			for (i = 0; i < stacks; i++)
-			{
+
+			for (int i = 0; i < stacks; i++) {
+
 				glPushMatrix();
 				glTranslatef(reference_point.x, reference_point.y, reference_point.z);
 				glColor3f(color.r, color.g, color.b);
-				for (j = 0; j < slices; j++)
-				{
+
+				for (int j = 0; j < slices; j++) {
 					glBegin(GL_QUADS);
 					{
 						//upper hemisphere
@@ -533,11 +549,14 @@ public:
 						glVertex3f(points[i][j + 1].x, points[i][j + 1].y, points[i][j + 1].z);
 						glVertex3f(points[i + 1][j + 1].x, points[i + 1][j + 1].y, points[i + 1][j + 1].z);
 						glVertex3f(points[i + 1][j].x, points[i + 1][j].y, points[i + 1][j].z);
+
+
 						//lower hemisphere
 						glVertex3f(points[i][j].x, points[i][j].y, -points[i][j].z);
 						glVertex3f(points[i][j + 1].x, points[i][j + 1].y, -points[i][j + 1].z);
 						glVertex3f(points[i + 1][j + 1].x, points[i + 1][j + 1].y, -points[i + 1][j + 1].z);
 						glVertex3f(points[i + 1][j].x, points[i + 1][j].y, -points[i + 1][j].z);
+
 					}
 					glEnd();
 				}
@@ -593,7 +612,7 @@ public:
         }
 };
 
-class Floor : public Object{
+class Floor : public Object {
 public:
     int tiles;
 
