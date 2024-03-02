@@ -312,7 +312,7 @@ void loadData()
 
         
 	Object *floor;
-	floor = new Floor(400, 10);
+	floor = new Floor();
 	floor->setColor(Color(0.5, 0.5, 0.5));
 
 	vector <double> coefficients = {0.4, 0.2, 0.2, 0.2};

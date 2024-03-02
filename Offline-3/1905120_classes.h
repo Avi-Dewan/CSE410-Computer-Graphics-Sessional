@@ -129,7 +129,34 @@ public:
         
             return (fabs(angle) > spotlight->cutoffAngle);
         }
-        
+
+        Ray getReflectedRay(Point intersectionPoint, Ray ray, Ray normal) {
+
+            Point reflectedDir = ray.dir - normal.dir*2*(ray.dir*normal.dir);
+            Ray reflectionRay = Ray(intersectionPoint, reflectedDir);
+
+            // to avoid self intersection slightly move the origin of the reflected ray towards the direction of the ray
+            reflectionRay.origin = reflectionRay.origin + reflectionRay.dir*1e-5;
+
+            return reflectionRay;
+        }
+
+        int getNearestObjectIndexReflection(Ray reflectionRay, Color &color) {
+
+            int nearestObjectIndex = -1;
+            double t = -1,tMin = 1e9;
+
+            int noOfObjects = objects.size();
+
+            for(int k=0; k < noOfObjects; k++) {
+                t = objects[k]->intersect(reflectionRay, color, 0);
+                if(t> 0 && t<tMin) {
+                    tMin = t , nearestObjectIndex = k;
+                }
+            }
+
+            return nearestObjectIndex;
+        }
 
 		virtual double intersect(Ray ray, Color &color, int level)
         {
@@ -225,49 +252,29 @@ public:
             */
 
             if(level < recursionLevel){
-                // if(level > 1) cout << "Recursion level " << level << endl;
-
                 // find normal at intersectionPoint
                 Ray normal = getNormal(intersectionPoint,ray);
 
                 // find reflected ray
-                Ray reflectionRay = Ray(intersectionPoint, ray.dir - normal.dir*2*(ray.dir*normal.dir));
-
-                /**
-                 * @brief slightly forward from the point 
-                 * (by moving the start a little bit towards the reflection direction)
-                 * to avoid self intersection
-                 * 
-                 */
-                reflectionRay.origin = reflectionRay.origin + reflectionRay.dir*1e-5;
-                
+                Ray reflectionRay = getReflectedRay(intersectionPoint, ray, normal);
 
                 // find nearest intersection object and do recursive call
 
-                int nearestObjectIndex = -1;
-                double t = -1,tMin = 1e9;
-
-                for(int k=0;k<(int)objects.size();k++)
-                {
-                    t = objects[k]->intersect(reflectionRay,color, 0);
-                    if(t> 0 && t<tMin)
-                        tMin = t , nearestObjectIndex = k;
-                }
+                int nearestObjectIndex = getNearestObjectIndexReflection(reflectionRay, color);
 
                 if(nearestObjectIndex != -1)
                 {
-                    // cout<<"Object "<<nearestObjectIndex<<" intersected"<<endl;
-
-                    Color colorTemp(0,0,0); // refelction color
-                    // cout<<"Before Color "<<color.r<<" "<<color.g<<" "<<color.b<<endl;
-                    double t = objects[nearestObjectIndex]->intersect(reflectionRay,colorTemp, level+1);
-
-                    // colorTemp will be updated while in the subsequent call
-                    // update color using the impact of reflection
+        
+                    Color colorReflection(0,0,0); // refelction color
                     
-                    color.r += colorTemp.r * coefficients[3];
-                    color.g += colorTemp.g * coefficients[3];
-                    color.b += colorTemp.b * coefficients[3];
+                    double t = objects[nearestObjectIndex]->intersect(reflectionRay, colorReflection, level+1);
+
+                    // colorReflection will be updated while in the subsequent call
+                    // update color 
+                    
+                    color.r += colorReflection.r * coefficients[3];
+                    color.g += colorReflection.g * coefficients[3];
+                    color.b += colorReflection.b * coefficients[3];
 
                 }
             }
@@ -617,45 +624,42 @@ public:
     int tiles;
 
     Floor(){
-        tiles = 1;
-    }
+        int floorWidth = 400, tileWidth = 10;
 
-    Floor(int floorWidth,int tileWidth){
         tiles = floorWidth / tileWidth;
+
         reference_point = Point(-floorWidth / 2, -floorWidth / 2, 0);
         length = tileWidth;
     }
 
     virtual Color getColorAt(Point point){
 
-        int tileX = (point.x - reference_point.x) / length;
-		int tileY = (point.y - reference_point.y) / length;
+        int X = (point.x - reference_point.x) / length;
+		int Y = (point.y - reference_point.y) / length;
 
-        if(tileX<0 || tileX>=tiles || tileY<0 || tileY>=tiles){
+        if(X<0 || X >= tiles || Y < 0 || Y >= tiles){
             return Color(0,0,0);
         }
 
-		if (((tileX + tileY) % 2) == 0)
-		{
+		if (((X + Y) % 2) == 0) {
 			return Color(1,1,1);
-		}
-		else
-		{
-            // cout<<"Black"<<endl;
-			return Color(0,0,0);
-		}
+		} 
+		
+        return Color(0,0,0);
+		
     }
 
     virtual Ray getNormal(Point point, Ray incidentRay){
+
         if(incidentRay.dir.z > 0) return Ray(point, Point(0, 0, 1));
         else return Ray(point, Point(0, 0, -1));
     }
 
     virtual void draw(){
-        for (int i = 0; i < tiles; i++)
-		{
-			for (int j = 0; j < tiles; j++)
-			{
+
+        for (int i = 0; i < tiles; i++) {
+			for (int j = 0; j < tiles; j++){
+
 				if (((i + j) % 2) == 0) glColor3f(1, 1, 1);
 				else glColor3f(0, 0, 0);
 
@@ -675,17 +679,9 @@ public:
         Point normal = Point(0, 0, 1);
         double dotP = normal * ray.dir;
         
-        if (round(dotP * 100) == 0)
-			return -1;
+        if (fabs(dotP) < 1e-5) return -1;
 
         double t = -(normal * ray.origin) / dotP;
-
-        Point p = ray.origin + ray.dir * t;
-
-        if(p.x <= reference_point.x || p.x >= abs(reference_point.x) && p.y <= reference_point.y && p.y >= abs(reference_point.y)){
-            return -1;
-        }
-        
         return t;
     }
 };
